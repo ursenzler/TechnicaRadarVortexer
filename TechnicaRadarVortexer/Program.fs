@@ -1,9 +1,8 @@
-﻿// Learn more about F# at http://fsharp.org
-
-open Argu
+﻿open Argu
 open FSharp.Data
 open FSharp.Data.CsvExtensions
 open System
+open System.IO
 
 let SummaryIndex = 3
 let StateIndex = 8
@@ -22,7 +21,7 @@ type TopicType = Library | Framework | ``Tool-Software`` | Product | Service | T
 type Classification = Know | Master | Experiment | Observe | ``Do not use`` | ``Situatively okay`` | None
 
 type Bucket =
-    | Ring of RadarRing * RadarSegment
+    | RingSegment of RadarRing * RadarSegment
     | NotOnRadar
 
 type Topic = { Text : string; Bucket : Bucket; Competence : string; Annotation : Radar; DetailedOnly : bool; Draft : bool }
@@ -105,11 +104,11 @@ let extract(row:CsvRow) =
                 | (_, ``Better alternative exists``)
                 | (_, ``End of life``)
                 | (_, Feasibility.``Situatively okay``)
-                | (_, Feasibility.``Do not use``) -> Ring(Reconsider, s)
+                | (_, Feasibility.``Do not use``) -> RingSegment(Reconsider, s)
                 | (Experiment, _)
-                | (Observe, _) -> Ring(Evaluate, s)
-                | (_, ``Not ready``) -> Ring(Reconsider, s)
-                | (_, Recommended) -> Ring(Use, s)
+                | (Observe, _) -> RingSegment(Evaluate, s)
+                | (_, ``Not ready``) -> RingSegment(Reconsider, s)
+                | (_, Recommended) -> RingSegment(Use, s)
                 | (_, Feasibility.None) -> NotOnRadar)
 
     let detailedOnly =
@@ -126,9 +125,9 @@ let extract(row:CsvRow) =
             Annotation = radar
             DetailedOnly = detailedOnly
             Draft = not (state = "Klassifiziert")
-        })
+        } : Topic)
 
-let raster = [
+let raster = seq [
     (Use, ``Concept or theme``);
     (Use, ``Method or technique``);
     (Use, ``Libraries, Frameworks, Programming Languages``);
@@ -156,39 +155,40 @@ let annotate annotation =
     | _ -> ""
 
 let dump topics =
-    for (ring, segment) in raster do
+    raster
+    |> Seq.collect (fun (ring, segment) ->
         let output =
             topics
             |> Seq.filter (fun x ->
                 match x.Bucket with
-                | Ring (rr, rs) when rr = ring && rs = segment -> true
+                | RingSegment (rr, rs) when rr = ring && rs = segment -> true
                 | _ -> false)
             |> Seq.sortBy (fun x -> x.Text.ToLowerInvariant())
 
-        Console.WriteLine()
-        Console.WriteLine("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-        Console.WriteLine("{0} - {1}", ring, segment)
-        Console.WriteLine("-----------------------------------")
-
-        output
-        |> Seq.iter (fun x ->
-            Console.WriteLine(
-                                 "{0} \t {1} {2}",
-                                 x.Text,
-                                 annotate x.Annotation,
-                                 if (x.Draft) then "*" else ""
-                             ))
-        |> ignore
+        seq {
+            yield ""
+            yield String.Format("### {0} - {1}", ring, segment)
+            yield!
+                output
+                |> Seq.map (fun x ->
+                     String.Format(
+                         "\n\r{0} {1}{2}",
+                         x.Text,
+                         annotate x.Annotation,
+                         if (x.Draft) then "*" else ""))
+        })
 
 type CLIArguments =
     | [<MainCommand>]File of path:string
-    | [<AltCommandLine("-r")>][<Unique>]Radar of string
+    | [<AltCommandLine("-o")>]Output of path:string
+    | [<AltCommandLine("-r")>]Radar of string
 with
     interface IArgParserTemplate with
         member s.Usage =
             match s with
             | File _ -> "specify an input csv file"
             | Radar _ -> "select the radar to be created. Possible values: global, .Net Technologies, Agile, ..."
+            | Output _ -> "specify the output markdown file. If no file is specified, the text is dumped to the console"
 
 [<EntryPoint>]
 let main argv =
@@ -198,6 +198,7 @@ let main argv =
 
     let inputFilePath = results.GetResult File
     let radar = results.TryGetResult Radar
+    let output = results.TryGetResult Output
 
     let csv = CsvFile.Load(inputFilePath)
 
@@ -215,16 +216,24 @@ let main argv =
             |> Seq.filter (fun x -> not x.DetailedOnly)
 
 
-    Console.WriteLine("============== {0} ==============", if (radar.IsSome) then radar.Value else "global")
+    let markdown =
+        seq {
+            yield String.Format("## {0}", if (radar.IsSome) then radar.Value else "global")
+            yield! dump chosenTopics
+            yield ""
+            yield ""
+            yield "### Legend:"
+            yield "* = Draft"
+            yield "^ = trend upwards"
+            yield "v = trend downwards"
+            yield "! = breaking change"
+            yield "* = Draft"
+        }
+        |> (fun x -> String.Join("\n\r", x))
 
-    dump chosenTopics
-
-    Console.WriteLine()
-    Console.WriteLine("Legend:")
-    Console.WriteLine("  * = Draft")
-    Console.WriteLine("  ^ = trend upwards")
-    Console.WriteLine("  v = trend downwards")
-    Console.WriteLine("  ! = breaking change")
-    Console.WriteLine("  * = Draft")
+    match output with
+    | Some path -> File.WriteAllText(path, markdown)
+    | _ -> Console.WriteLine(markdown)
+    |> ignore
 
     0 // return an integer exit code
