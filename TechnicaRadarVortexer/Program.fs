@@ -223,11 +223,10 @@ let main argv =
             yield ""
             yield ""
             yield "### Legend:"
-            yield "* = Draft"
-            yield "^ = trend upwards"
-            yield "v = trend downwards"
-            yield "! = breaking change"
-            yield "* = Draft"
+            yield "- * = Draft"
+            yield "- ^ = trend upwards"
+            yield "- v = trend downwards"
+            yield "- ! = breaking change"
         }
         |> (fun x -> String.Join("\n\r", x))
 

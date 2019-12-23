@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="bdb13e64-00f6-4232-9f06-c7477c3f9100" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.TechnicaRadarVortexer/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.TechnicaRadarVortexer/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TechnicaRadarVortexer/Program.fs" beforeDir="false" afterPath="$PROJECT_DIR$/TechnicaRadarVortexer/Program.fs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -109,7 +108,7 @@
       <updated>1576844462924</updated>
       <workItem from="1576844468029" duration="8952000" />
       <workItem from="1577091102522" duration="8590000" />
-      <workItem from="1577103271402" duration="3899000" />
+      <workItem from="1577103271402" duration="4499000" />
     </task>
     <servers />
   </component>
