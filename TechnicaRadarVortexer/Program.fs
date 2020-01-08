@@ -208,7 +208,7 @@ let main argv =
 
     let chosenTopics =
         match radar with
-        | Some competence ->
+        | Some competence when not (competence = "global") ->
             topics
             |> Seq.filter (fun x -> x.Competence = competence)
         | _ ->
@@ -234,5 +234,7 @@ let main argv =
     | Some path -> File.WriteAllText(path, markdown)
     | _ -> Console.WriteLine(markdown)
     |> ignore
+
+    Console.WriteLine("built radar with {0} topics.", Seq.length chosenTopics)
 
     0 // return an integer exit code
