@@ -88,7 +88,7 @@ let extract(row:CsvRow) =
         | "trend (downwards)" -> ``Trend (downwards)``
         | "breaking change" -> ``Breaking change``
         | "not on radar" | "No radar" -> ``Not on radar``
-        | "maybe" -> Detailed
+        | "detailed" -> Detailed
         | unknown -> raise (Exception("unknown radar value: " + unknown))
 
     let segments = getSegments(types)
@@ -172,10 +172,10 @@ let dump topics =
                 output
                 |> Seq.map (fun x ->
                      String.Format(
-                         "\n\r{0} {1}{2}",
+                         "{0} {1}{2}",
                          x.Text,
                          annotate x.Annotation,
-                         if (x.Draft) then "*" else ""))
+                         if (x.Draft) then "°" else ""))
         })
 
 type CLIArguments =
@@ -223,7 +223,7 @@ let main argv =
             yield ""
             yield ""
             yield "### Legend:"
-            yield "- * = Draft"
+            yield "- ° = Draft"
             yield "- ^ = trend upwards"
             yield "- v = trend downwards"
             yield "- ! = breaking change"
