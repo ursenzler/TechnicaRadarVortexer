@@ -142,11 +142,6 @@ let raster = seq [
     (Reconsider, Tools)
 ]
 
-let competencesForDetailRadars = [
-    ".Net Technologies";
-    "Agile"
-]
-
 let annotate annotation =
     match annotation with
     | ``Trend (upwards)`` -> "^"
@@ -187,8 +182,11 @@ with
         member s.Usage =
             match s with
             | File _ -> "specify an input csv file"
-            | Radar _ -> "select the radar to be created. Possible values: global, .Net Technologies, Agile, ..."
+            | Radar _ -> "select the radar to be created. Possible values: global or a comma-separated list of competences: .Net Technologies, Agile, ..."
             | Output _ -> "specify the output markdown file. If no file is specified, the text is dumped to the console"
+
+let trim (s : string) =
+    s.Trim()
 
 [<EntryPoint>]
 let main argv =
@@ -208,9 +206,10 @@ let main argv =
 
     let chosenTopics =
         match radar with
-        | Some competence when not (competence = "global") ->
+        | Some x when not (x = "global") ->
+            let competences = x.Split(',') |> Array.map trim
             topics
-            |> Seq.filter (fun x -> x.Competence = competence)
+            |> Seq.filter (fun x -> Array.contains x.Competence competences)
         | _ ->
             topics
             |> Seq.filter (fun x -> not x.DetailedOnly)
