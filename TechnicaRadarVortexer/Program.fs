@@ -24,7 +24,10 @@ type Bucket =
     | RingSegment of RadarRing * RadarSegment
     | NotOnRadar
 
-type Topic = { Text : string; Bucket : Bucket; Competence : string; Annotation : Radar; DetailedOnly : bool; Draft : bool }
+type Topic = { Text : string; Bucket : Bucket; Competences : string list; Annotation : Radar; DetailedOnly : bool; Draft : bool }
+
+let trim (s : string) =
+    s.Trim()
 
 let getSegments(topicTypes:TopicType[]) =
     topicTypes
@@ -121,11 +124,11 @@ let extract(row:CsvRow) =
         {
             Text = summary
             Bucket = x
-            Competence = competence
+            Competences = competence.Split(',') |> Array.map trim |> Array.toList
             Annotation = radar
             DetailedOnly = detailedOnly
             Draft = not (state = "Klassifiziert")
-        } : Topic)
+        })
 
 let raster = seq [
     (Use, ``Concept or theme``);
@@ -185,8 +188,8 @@ with
             | Radar _ -> "select the radar to be created. Possible values: global or a comma-separated list of competences: .Net Technologies, Agile, ..."
             | Output _ -> "specify the output markdown file. If no file is specified, the text is dumped to the console"
 
-let trim (s : string) =
-    s.Trim()
+let containsAny b a =
+    a |> List.exists (fun x -> b |> List.contains x)
 
 [<EntryPoint>]
 let main argv =
@@ -207,13 +210,12 @@ let main argv =
     let chosenTopics =
         match radar with
         | Some x when not (x = "global") ->
-            let competences = x.Split(',') |> Array.map trim
+            let competences = x.Split(',') |> Array.map trim |> Array.toList
             topics
-            |> Seq.filter (fun x -> Array.contains x.Competence competences)
+            |> Seq.filter (fun topic -> topic.Competences |> containsAny competences)
         | _ ->
             topics
             |> Seq.filter (fun x -> not x.DetailedOnly)
-
 
     let markdown =
         seq {
